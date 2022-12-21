@@ -161,15 +161,16 @@ public:
         vvint f(n, vint(n));
 
         auto start = chrono::steady_clock::now();
-        for (;;) {
+        while(true) {
             vint From(n, -1);
             vint q(n);
 
-            int h = 0, t = 0;
-            q[t++] = from;
+            q[0] = from;
             From[from] = 0;
-            for (int cur; h < t; ) {
-                cur = q[h++];
+
+            int h = 0, t = 1;
+            while (h < t) {
+                int cur = q[h++];
                 for (int v = 0; v < n; v++)
                     if (From[v] == -1 && c[cur][v] - f[cur][v] > 0) {
                         q[t++] = v;
@@ -180,14 +181,15 @@ public:
             if (From[to] == -1)
                 break;
 
-            int cf = INF;
-            for (int cur = to; cur != from; ) {
+            int cf = INF, cur = to;
+            while (cur != from) {
                 int prev = From[cur];
                 cf = min (cf, c[prev][cur] - f[prev][cur]);
                 cur = prev;
             }
 
-            for (int cur=to; cur != from; ) {
+            cur = to;
+            while (cur != from) {
                 int prev = From[cur];
                 f[prev][cur] += cf;
                 f[cur][prev] -= cf;
@@ -198,8 +200,8 @@ public:
 
         int flow = 0;
         for (int i=0; i<n; i++)
-            if (c[0][i])
-                flow += f[0][i];
+            if (c[from][i])
+                flow += f[from][i];
 
         auto stop = std::chrono::steady_clock::now();
         chrono::duration<double> diff = stop - start;
