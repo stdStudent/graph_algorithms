@@ -155,60 +155,67 @@ public:
     }
 
     int EdmondKarp(int from = -1, int to = -1) {
+        if (from < 0) from = 0;
+        if (to < 0) to = n_verts-1;
+
         vvint c = AdjMatrix;
         int n = n_verts;
 
-        vvint f(n, vint(n));
+        vvint D(n, vint(n)); // residual network
 
         auto start = chrono::steady_clock::now();
         while(true) {
-            vint From(n, -1);
+            vint P(n, -1); // Edges of the graph of the shortest paths
             vint q(n);
 
             q[0] = from;
-            From[from] = 0;
+            P[from] = 0;
 
+            // (3.c)
             int h = 0, t = 1;
             while (h < t) {
                 int cur = q[h++];
                 for (int v = 0; v < n; v++)
-                    if (From[v] == -1 && c[cur][v] - f[cur][v] > 0) {
+                    if (P[v] == -1 && c[cur][v] - D[cur][v] > 0) {
                         q[t++] = v;
-                        From[v] = cur;
+                        P[v] = cur;
                     }
             }
 
-            if (From[to] == -1)
+            // (2)
+            if (P[to] == -1)
                 break;
 
-            int cf = INF, cur = to;
+            // (3.a)
+            int c_min = INF, cur = to;
             while (cur != from) {
-                int prev = From[cur];
-                cf = min (cf, c[prev][cur] - f[prev][cur]);
+                int prev = P[cur];
+                c_min = min(c_min, c[prev][cur] - D[prev][cur]);
                 cur = prev;
             }
 
+            // (3.b)
             cur = to;
             while (cur != from) {
-                int prev = From[cur];
-                f[prev][cur] += cf;
-                f[cur][prev] -= cf;
+                int prev = P[cur];
+                D[prev][cur] += c_min;
+                D[cur][prev] -= c_min;
                 cur = prev;
             }
 
         }
 
-        int flow = 0;
+        int phi_flow_size = 0;
         for (int i=0; i<n; i++)
             if (c[from][i])
-                flow += f[from][i];
+                phi_flow_size += D[from][i];
 
         auto stop = std::chrono::steady_clock::now();
         chrono::duration<double> diff = stop - start;
         cout << "Time: " << diff.count() << " seconds." << endl;
 
-        writeMatrixToFile(f, "Edmond_Karp.txt");
-        return flow;
+        writeMatrixToFile(D, "Edmond_Karp.txt");
+        return phi_flow_size;
     }
 
     bool bfs(int s, int t, vector<vector<int>> D, vector<int>& p) {
