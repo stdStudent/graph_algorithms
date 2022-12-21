@@ -158,7 +158,7 @@ public:
         if (from < 0) from = 0;
         if (to < 0) to = n_verts-1;
 
-        vvint c = AdjMatrix;
+        vvint C = AdjMatrix; //	flow capacity
         int n = n_verts;
 
         vvint D(n, vint(n)); // residual network
@@ -171,12 +171,13 @@ public:
             q[0] = from;
             P[from] = 0;
 
-            // (3.c)
+            // (2)
             int h = 0, t = 1;
-            while (h < t) {
+            while (h < t) { // Run through the graph vertexes
                 int cur = q[h++];
                 for (int v = 0; v < n; v++)
-                    if (P[v] == -1 && c[cur][v] - D[cur][v] > 0) {
+                    // P[v] == -1  <=>  not visited
+                    if (P[v] == -1 && C[cur][v] - D[cur][v] > 0) {
                         q[t++] = v;
                         P[v] = cur;
                     }
@@ -190,11 +191,11 @@ public:
             int c_min = INF, cur = to;
             while (cur != from) {
                 int prev = P[cur];
-                c_min = min(c_min, c[prev][cur] - D[prev][cur]);
+                c_min = min(c_min, C[prev][cur] - D[prev][cur]);
                 cur = prev;
             }
 
-            // (3.b)
+            // (3.b, 3.C)
             cur = to;
             while (cur != from) {
                 int prev = P[cur];
@@ -207,7 +208,7 @@ public:
 
         int phi_flow_size = 0;
         for (int i=0; i<n; i++)
-            if (c[from][i])
+            if (C[from][i])
                 phi_flow_size += D[from][i];
 
         auto stop = std::chrono::steady_clock::now();
@@ -216,60 +217,6 @@ public:
 
         writeMatrixToFile(D, "Edmond_Karp.txt");
         return phi_flow_size;
-    }
-
-    bool bfs(int s, int t, vector<vector<int>> D, vector<int>& p) {
-        vector<bool> visited(n_verts, false);
-        queue <int> q;
-        q.push(s);
-        visited[s] = true;
-        for (unsigned int i = 0; i < p.size(); ++i)
-            p[i] = -1;
-        p[s] = 0;
-
-        while (!q.empty()) {
-            int u = q.front();
-            q.pop();
-            for (int v = 0; v < n_verts; v++)
-                if (visited[v] == false && AdjMatrix[u][v] - D[u][v] > 0) {
-                    q.push(v);
-                    p[v] = u;
-                    visited[v] = true;
-                }
-        }
-        return visited[t] == true;
-    }
-
-    int ef(int s, int t) {
-        int flow  = 0;
-        vvint D(n_verts, vector<int>(n_verts, 0));
-        vvint c = AdjMatrix;
-        vector<int> p(n_verts);
-
-        auto start = chrono::steady_clock::now();
-        while (bfs(s, t, D, p)) {
-            int cmin = INF;
-            for (int v = t; v != s; v = p[v]) {
-                int u = p[v];
-                cmin = min(cmin, c[u][v] - D[u][v]);
-            }
-
-            for (int v = t; v != s; v = p[v]) {
-                int u = p[v];
-                D[u][v] += cmin;
-                D[v][u] -= cmin;
-            }
-
-            flow += cmin;
-        }
-
-        auto stop = std::chrono::steady_clock::now();
-        chrono::duration<double> diff = stop - start;
-        cout << "Time: " << diff.count() << " seconds." << endl;
-
-        writeMatrixToFile(D, "lab3_result.txt");
-
-        return flow;
     }
 
 };

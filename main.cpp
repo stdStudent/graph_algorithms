@@ -10,10 +10,7 @@ int main() {
     //G.printAdjList();
     //G.floydWarshall();
 
-    cout << G.EdmondKarp(153, 263);
-    // 0, 100 =
-    //cout << G.maxFlow(0, 100);
-    cout << '\n' << G.ef(153, 263);
+    cout << G.EdmondKarp(0,499);
 
     return 0;
 }
