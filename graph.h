@@ -7,6 +7,7 @@
 #include <fstream>
 #include <limits>
 #include <list>
+#include <algorithm>
 
 using namespace std;
 
@@ -16,10 +17,22 @@ typedef vector<vint> vvint;
 const int INF = std::numeric_limits<int>::max();
 
 class Graph {
+    struct Edge {
+        int weight;
+        int first;
+        int second;
+
+        Edge(int w, int f, int s) {
+            weight = w;
+            first = f;
+            second = s;
+        }
+    };
+
     vector<vector<int>> AdjMatrix;
     vector<vector<int>> AdjMatrixINF;
     vector<vector<int>> AdjList;
-    list<int> Edges;
+    vector<Edge> Edges;
     int n_verts = 0;
     int n_edges = 0;
 
@@ -53,7 +66,7 @@ class Graph {
         for (int i = 0; i < n_verts; ++i) {
             for (int j = 0; j < n_verts; ++j) {
                 if (AdjMatrix[i][j] != 0)
-                    Edges.push_back(AdjMatrix[i][j]);
+                    Edges.emplace_back(AdjMatrix[i][j], i, j);
             }
         }
     }
@@ -68,6 +81,37 @@ class Graph {
                 }
                 f << "\n";
             }
+            f.close();
+        } else
+            cout << "error";
+    }
+
+    void writePointsToFile(const vector<pair<int,int>>& points, const string& file)
+    {
+        vector <pair<int,int>>:: const_iterator i;
+
+        if (!file.empty())
+        {
+            ofstream out(file.c_str());
+            if(out.fail()) {
+                out.close();
+            }
+
+            for(i=points.begin(); i != points.end();++i ) {
+                out << i->first << " " << i->second << "\n";
+            }
+
+            out.close();
+        }
+    }
+
+    void writeVectorToFile(vector<int> matrix, string file_path) {
+        ofstream f;
+        f.open(file_path);
+        if (f.is_open()) {
+            for (int i = 0; i < n_verts; i++)
+                f << matrix[i] << ' ';
+
             f.close();
         } else
             cout << "error";
@@ -104,8 +148,8 @@ public:
         convertToAdjList();
         convertToAdjMatrixINF();
 
-        //n_edges = e;
-        //convertToListEdges();
+        n_edges = e;
+        convertToListEdges();
     }
 
     void printAdjMatrix() {
@@ -217,6 +261,98 @@ public:
 
         writeMatrixToFile(D, "Edmond_Karp.txt");
         return phi_flow_size;
+    }
+
+    int Kruskal() {
+        sort(Edges.begin(), Edges.end(), [](Edge a, Edge b){return a.weight < b.weight;});
+
+        vector<int> comp(n_verts);
+        vector<pair<int, int>> result;
+        for (int i = 0; i < n_verts; ++i)
+            comp[i] = i;
+        int ans = 0;
+
+
+        auto start = chrono::steady_clock::now();
+        for (auto& edge: Edges)
+        {
+            int weight = edge.weight;
+            int begin  = edge.first;
+            int end    = edge.second;
+
+            if (comp[begin] != comp[end])
+            {
+                result.emplace_back(begin, end);
+                ans += weight;
+                int a = comp[begin];
+                int b = comp[end];
+                for (int i = 0; i < n_verts; ++i)
+                    if (comp[i] == b)
+                        comp[i] = a;
+            }
+        }
+        auto stop = std::chrono::steady_clock::now();
+        chrono::duration<double> diff = stop - start;
+        cout << "Time: " << diff.count() << " seconds." << endl;
+
+        if (result.size() != (n_verts - 1)) {
+            cout << "The graph is not connected!\n";
+            return -1;
+        }
+
+        writePointsToFile(result, "Kruskal.txt");
+        return ans;
+    }
+
+    int Prim() {
+        int index = 0;
+
+        std::vector<bool> visited(n_verts, false);
+        visited[0] = true;
+
+        int ans = 0;
+        vector<int> p(n_verts, INF);
+        p[0] = 0;
+
+        vector<int> result(n_verts);
+        result[0] = -1;
+
+
+        auto start = std::chrono::steady_clock::now();
+        for (int i = 0; i < n_verts; ++i) {
+            int min_weight = INF;
+            for (int j = 0; j < n_verts; ++j) {
+                if (visited[j])
+                    continue;
+                if (p[j] < min_weight) {
+                    min_weight = p[j];
+                    index = j;
+                }
+            }
+
+            if (min_weight < INF)
+                ans += min_weight;
+            visited[index] = true;
+
+            for (int z = 0; z < n_verts; ++z) {
+                if (AdjMatrixINF[index][z] == 0 || visited[z])
+                    continue;
+                p[z] = min(AdjMatrixINF[index][z], p[z]);
+                result[z] = index;
+            }
+        }
+
+        auto stop = std::chrono::steady_clock::now();
+        chrono::duration<double> diff = stop - start;
+        cout << "Time: " << diff.count() << " seconds." << endl;
+
+        if (find(visited.begin(), visited.end(), false) != visited.end()) {
+            cout << "The graph is not connected!\n";
+            return -1;
+        }
+
+        writeVectorToFile(result, "Prim.txt");
+        return ans;
     }
 
 };

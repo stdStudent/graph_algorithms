@@ -5,12 +5,14 @@
 using namespace std;
 
 int main() {
-    Graph G("6.txt");
+    Graph G("SST/test5.txt");
     //G.printAdjMatrix();
     //G.printAdjList();
     //G.floydWarshall();
 
-    cout << G.EdmondKarp(0,499);
+    //cout << G.EdmondKarp(0, 6);
+    cout << G.Kruskal();
+    cout << '\n' << G.Prim();
 
     return 0;
 }
