@@ -5,15 +5,20 @@
 using namespace std;
 
 int main() {
-    Graph G("SST/test5.txt");
+    Graph G("BK/test2.txt");
     //G.printAdjMatrix();
     //G.printAdjList();
     //G.floydWarshall();
 
     //cout << G.EdmondKarp(0, 6);
-    cout << G.Kruskal();
-    cout << '\n' << G.Prim();
+    //cout << G.Kruskal();
+    //cout << '\n' << G.Prim();
+    auto [first, second] = G.BronKerbosch();
+    cout << first << ' ' << second << '\n';
 
+    //G.BronKerbosch();
+
+//    Graph GG()
     return 0;
 }
 

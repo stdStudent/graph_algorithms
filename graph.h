@@ -29,6 +29,7 @@ class Graph {
         }
     };
 
+    vvint result_cluques;
     vector<vector<int>> AdjMatrix;
     vector<vector<int>> AdjMatrixINF;
     vector<vector<int>> AdjList;
@@ -117,6 +118,87 @@ class Graph {
             cout << "error";
     }
 
+    void writeListToFile(list<set<int>> lsi, string file_path) {
+        ofstream f;
+        f.open(file_path);
+        if (f.is_open()) {
+            for (auto& l: lsi) {
+                for (auto& s: l)
+                    f << s << ' ';
+                f << '\n';
+            }
+
+            f.close();
+        } else
+            cout << "error";
+    }
+
+    void writeListToFile(list<vector<int>> lsi, string file_path) {
+        ofstream f;
+        f.open(file_path);
+        if (f.is_open()) {
+            for (auto& l: lsi) {
+                for (auto& s: l)
+                    f << s << ' ';
+                f << '\n';
+            }
+
+            f.close();
+        } else
+            cout << "error";
+    }
+
+    void writeVvintToFile(vvint lsi, string file_path) {
+        ofstream f;
+        f.open(file_path);
+        if (f.is_open()) {
+            for (auto& l: lsi) {
+                for (auto& s: l)
+                    f << s << ' ';
+                f << '\n';
+            }
+
+            f.close();
+        } else
+            cout << "error";
+    }
+
+    /* BronKerbosch */
+    bool checkBK(vint& P, vint& X) {
+        for (auto& i : X) {
+            bool q = true;
+            for (auto& j : P) {
+                if (AdjMatrix[i][j]) {
+                    q = false;
+                    break;
+                }
+            }
+            if (q) { return false; }
+        }
+        return true;
+    }
+
+    /* BronKerbosch */
+    void extend(vint& R, vint& P, vint& X) {
+        while (!P.empty() && checkBK(P, X)) {
+            auto v = P[0];
+            P.erase(P.begin());
+
+            R.push_back(v);
+            vint P_cpy, X_cpy;
+            set_difference(P.begin(), P.end(), AdjList[v].begin(), AdjList[v].end(), inserter(P_cpy, P_cpy.begin()));
+            set_difference(X.begin(), X.end(), AdjList[v].begin(), AdjList[v].end(), inserter(X_cpy, X_cpy.begin()));
+
+            if (P_cpy.empty() && X_cpy.empty())
+                result_cluques.push_back(R);
+            else
+                extend(R, P_cpy, X_cpy);
+
+            R.erase(std::remove(R.begin(), R.end(), v), R.end());
+            X.push_back(v);
+        }
+    }
+
 public:
     [[nodiscard]] const vector<vector<int>> &getAdjMatrix() const {
         return AdjMatrix;
@@ -144,6 +226,28 @@ public:
         }
 
         test_file.close();
+        AdjMatrix = tmp;
+        convertToAdjList();
+        convertToAdjMatrixINF();
+
+        n_edges = e;
+        convertToListEdges();
+    }
+
+    explicit Graph(std::istream& in) {
+        int n = 0, e = 0;
+        in >> n;
+        n_verts = n;
+        vector<vector<int>> tmp(n,vector<int>(n,0));
+
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                in >> tmp[i][j];
+                if (tmp[i][j] != 0)
+                    ++e;
+            }
+        }
+
         AdjMatrix = tmp;
         convertToAdjList();
         convertToAdjMatrixINF();
@@ -264,7 +368,8 @@ public:
     }
 
     int Kruskal() {
-        sort(Edges.begin(), Edges.end(), [](Edge a, Edge b){return a.weight < b.weight;});
+        //sort(Edges.begin(), Edges.end(), [](Edge a, Edge b){return a.weight < b.weight;});
+        std::ranges::sort(Edges, {}, &Edge::weight);
 
         vector<int> comp(n_verts);
         vector<pair<int, int>> result;
@@ -353,6 +458,99 @@ public:
 
         writeVectorToFile(result, "Prim.txt");
         return ans;
+    }
+
+    pair<int, int> slowBronKerbosch()
+    {
+        auto a = AdjMatrix;
+        auto size = n_verts;
+
+        set<int> M, G, K, P;
+        list<set<int>> result;
+        for (int i = 0; i < size; i++)
+            K.insert(i);
+
+        int v, Count = 0, cnt = 0;
+        int Stack1[100];
+        std::set<int> Stack2[100];
+        std::set<int>::iterator theIterator;
+        theIterator = K.begin();
+
+
+        auto start = std::chrono::steady_clock::now();
+        while (!K.empty() || !M.empty()){
+            if (!K.empty()) {
+                theIterator = K.begin();
+                v = *theIterator;
+
+                Stack2[++Count] = M;
+                Stack2[++Count] = K;
+                Stack2[++Count] = P;
+                Stack1[++cnt]   = v;
+
+                M.insert(v);
+                for (int i = 0; i < size; i++) {
+                    if (a[v][i]) {
+                        theIterator = K.find(i);
+                        if (theIterator != K.end())
+                            K.erase(theIterator);
+
+                        theIterator = P.find(i);
+                        if (theIterator != P.end())
+                            P.erase(theIterator);
+                    }
+                }
+
+                theIterator = K.find(v);
+                if (theIterator != K.end())
+                    K.erase(theIterator);
+            } else {
+                if (P.empty())
+                    result.push_back(M);
+
+                v = Stack1[cnt--];
+                P = Stack2[Count--];
+                K = Stack2[Count--];
+                M = Stack2[Count--];
+
+                theIterator = K.find(v);
+                if (theIterator != K.end())
+                    K.erase(theIterator);
+
+                P.insert(v);
+            }
+        }
+
+        auto stop = std::chrono::steady_clock::now();
+        chrono::duration<double> diff = stop - start;
+        cout << "Time: " << diff.count() << " seconds." << endl;
+
+        vint tmp;
+        for (auto& i: result)
+            tmp.push_back(i.size());
+
+        writeListToFile(result, "BK.txt");
+        return make_pair(*max_element(tmp.begin(), tmp.end()), result.size());
+    }
+
+    pair<int, int> BronKerbosch() {
+        vint R, P, X;
+
+        for (int i = 0; i < n_verts; ++i)
+            P.push_back(i);
+
+        auto start = std::chrono::steady_clock::now();
+        extend(R, P, X);
+        auto stop = std::chrono::steady_clock::now();
+        chrono::duration<double> diff = stop - start;
+        cout << "Time: " << diff.count() << " seconds." << endl;
+
+        vint tmp;
+        for (auto& i: result_cluques)
+            tmp.push_back(i.size());
+
+        writeVvintToFile(result_cluques, "BK.txt");
+        return make_pair(*max_element(tmp.begin(), tmp.end()), result_cluques.size());
     }
 
 };
