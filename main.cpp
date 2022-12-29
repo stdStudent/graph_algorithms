@@ -5,7 +5,7 @@
 using namespace std;
 
 int main() {
-    Graph G("BK/test2.txt");
+    Graph G("BK/test4.txt");
     //G.printAdjMatrix();
     //G.printAdjList();
     //G.floydWarshall();

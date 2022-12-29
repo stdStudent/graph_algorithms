@@ -29,7 +29,8 @@ class Graph {
         }
     };
 
-    vvint result_cluques;
+    vvint result_BK;
+    size_t max_BK_set_size = 0;
     vector<vector<int>> AdjMatrix;
     vector<vector<int>> AdjMatrixINF;
     vector<vector<int>> AdjList;
@@ -189,8 +190,10 @@ class Graph {
             set_difference(P.begin(), P.end(), AdjList[v].begin(), AdjList[v].end(), inserter(P_cpy, P_cpy.begin()));
             set_difference(X.begin(), X.end(), AdjList[v].begin(), AdjList[v].end(), inserter(X_cpy, X_cpy.begin()));
 
-            if (P_cpy.empty() && X_cpy.empty())
-                result_cluques.push_back(R);
+            if (P_cpy.empty() && X_cpy.empty()) {
+                result_BK.push_back(R);
+                max_BK_set_size = max(max_BK_set_size, R.size());
+            }
             else
                 extend(R, P_cpy, X_cpy);
 
@@ -545,12 +548,12 @@ public:
         chrono::duration<double> diff = stop - start;
         cout << "Time: " << diff.count() << " seconds." << endl;
 
-        vint tmp;
-        for (auto& i: result_cluques)
-            tmp.push_back(i.size());
+        /*vint tmp;
+        for (auto& i: result_BK)
+            tmp.push_back(i.size());*/
 
-        writeVvintToFile(result_cluques, "BK.txt");
-        return make_pair(*max_element(tmp.begin(), tmp.end()), result_cluques.size());
+        writeVvintToFile(result_BK, "BK.txt");
+        return make_pair(max_BK_set_size, result_BK.size());
     }
 
 };
